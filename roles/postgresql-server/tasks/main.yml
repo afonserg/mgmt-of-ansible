@@ -1,0 +1,51 @@
+#
+# $Id$
+#
+---
+
+- name: install repo and postgresql packages (debian like)
+  block:
+    - stat:
+        path: "/etc/apt/sources.list.d/pgdg.list"
+      register: pgdglist
+    - block:
+        - apt_key: 
+            url: "https://www.postgresql.org/media/keys/ACCC4CF8.asc"
+        - apt_repository:
+            repo: "deb http://apt.postgresql.org/pub/repos/apt/ {{ ansible_facts['distribution_release'] }}-pgdg main"
+            filename: pgdg.list
+            update_cache: yes
+      when: pgdglist.stat.exists == false 
+    - apt:
+        name: postgresql
+        state: latest
+  when: ansible_facts['os_family']|lower == 'debian'
+
+- name: install standard postgresql packages (alpine)
+  block:
+    - apk:
+        name: postgresql,postgresql-contrib
+        update_cache: yes
+  when: ansible_facts['os_family']|lower == 'alpine'
+
+- name: configure postgresql
+  block:
+    - debug:
+        msg: "TODO: stop pgsql, ensure free spase for data directory are enought or move data directory onto separate volume, start pgsql"
+    - template:
+        src: postgresql.conf.j2
+        dest: /etc/postgresql/12/main/postgresql.conf
+        owner: postgres
+        group: postgres
+        mode: '0640'
+    - template:
+        src: pg_hba.conf.j2
+        dest: /etc/postgresql/12/main/pg_hba.conf
+        owner: postgres
+        group: postgres
+        mode: '0600'
+    - service: name=postgresql state=restarted
+  when: ansible_facts['os_family']|lower == 'debian'
+
+
+

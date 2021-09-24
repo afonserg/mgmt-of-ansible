@@ -1,0 +1,26 @@
+- name: load zabbix database into mysql
+  block:
+    - apk:
+        name: zabbix-setup, zabbix-mysql
+    - shell: echo "CREATE USER IF NOT EXISTS {{zbx_dbuser}} IDENTIFIED BY '{{zbx_dbpass}}'" |mysql -u root -p'{{db_root_pass}}'
+    - shell: echo "DROP DATABASE IF EXISTS {{zbx_dbname}}" |mysql -u root -p'{{db_root_pass}}'
+    - command: mysqladmin -u root -p'{{db_root_pass}}' create {{zbx_dbname}}
+    - shell: cat /usr/share/zabbix/database/mysql/schema.sql |mysql -u root -p'{{db_root_pass}}' {{zbx_dbname}}
+    - template:
+        src: init.sql.j2
+        dest: /tmp/init.sql
+    - shell: cat /tmp/init.sql |mysql -u root -p'{{db_root_pass}}' {{zbx_dbname}}
+    - file:
+        path: /tmp/init.sql
+        state: absent
+    - template: src=zabbix_proxy.conf.j2 dest=/etc/zabbix/zabbix_proxy.conf
+    - command: install -d -o zabbix -g zabbix /var/lib/zabbix
+    - file:
+        path: /var/lib/zabbix/zabbix_traps.tmp
+        state: touch
+        owner: zabbix
+        group: zabbix
+        mode: '0644'
+    - command: rc-service zabbix-proxy restart
+    - command: rc-update add zabbix-proxy default
+  when: force_reinstall|bool == true and ansible_facts.os_family|lower == 'alpine'

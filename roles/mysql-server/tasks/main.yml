@@ -1,0 +1,15 @@
+---
+
+- name: install and configure mysql/mariadb packages
+  block:
+    - apk:
+        name: mariadb, mariadb-server-utils
+    - template: src=mariadb-server.cnf.j2 dest=/etc/my.cnf.d/mariadb-server.cnf
+    - shell: test -d /var/lib/mysql/mysql || rc-service mariadb setup
+    - service: name=mariadb state=restarted
+    - command: mysqladmin -u root password "{{db_root_pass}}"
+    - command: rc-update add mariadb default
+    - template: src=init.sql.j2 dest=/tmp/init.sql
+    - shell: cat /tmp/init.sql |mysql -B -u root --password="{{db_root_pass}}"
+    - file: path=/tmp/init.sql state=absent
+  when: force_reinstall|bool is yes

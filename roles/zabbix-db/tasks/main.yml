@@ -1,0 +1,10 @@
+- name: load zabbix database into mysql
+  block:
+    - apk: name=zabbix-setup
+    - command: mariadb-admin create {{dbname}}
+    - shell: echo "create user if not exists {{dbuser}} IDENTIFIED by '{{dbpassword}}'" |mariadb -u root --password="{{db_root_pass}}"
+    - shell: cat /usr/share/zabbix/database/mysql/schema.sql |mariadb zabbix
+    - shell: cat /usr/share/zabbix/database/mysql/images.sql |mariadb zabbix
+    - shell: cat /usr/share/zabbix/database/mysql/data.sql |mariadb zabbix
+    - debug: msg="need grant rights to database"
+  when: force_reinstall|bool is true

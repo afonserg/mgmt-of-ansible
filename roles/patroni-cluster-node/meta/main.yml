@@ -1,0 +1,7 @@
+#
+# $Id$
+#
+---
+dependencies:
+  - role: postgresql-server
+  - role: haproxy-cluster-node

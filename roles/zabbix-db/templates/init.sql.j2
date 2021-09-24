@@ -1,0 +1,6 @@
+GRANT ALL ON {{dbname}}.* TO {{dbuser}}@'127.0.0.1' IDENTIFIED BY '{{dbpassword}}' WITH GRANT OPTION;
+GRANT ALL ON {{dbname}}.* TO {{dbuser}}@'localhost' IDENTIFIED BY '{{dbpassword}}' WITH GRANT OPTION;
+GRANT ALL ON {{dbname}}.* TO {{dbuser}}@'{{}}' IDENTIFIED BY '{{dbpassword}}' WITH GRANT OPTION;
+GRANT ALL ON {{dbname}}.* TO {{dbuser}}@'{{zabbix_server}}' IDENTIFIED BY '{{dbpassword}}' WITH GRANT OPTION;
+GRANT ALL ON {{dbname}}.* TO {{dbuser}}@'::1' IDENTIFIED BY '{{dbpassword}}' WITH GRANT OPTION;
+FLUSH PRIVILEGES;

@@ -1,0 +1,6 @@
+GRANT ALL ON *.* TO {{db_user}}@'127.0.0.1' IDENTIFIED BY '{{db_user_pass}}' WITH GRANT OPTION;
+GRANT ALL ON *.* TO {{db_user}}@'localhost' IDENTIFIED BY '{{db_user_pass}}' WITH GRANT OPTION;
+GRANT ALL ON *.* TO {{db_user}}@'::1' IDENTIFIED BY '{{db_user_pass}}' WITH GRANT OPTION;
+DELETE FROM mysql.user WHERE User='';
+DROP DATABASE test;
+FLUSH PRIVILEGES;

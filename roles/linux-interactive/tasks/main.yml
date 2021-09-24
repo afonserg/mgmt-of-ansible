@@ -1,0 +1,8 @@
+# $Id$
+
+---
+- name: install some useful utilities for interactive shell work
+  package:
+    - mc
+    - vim-nox
+

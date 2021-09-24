@@ -1,0 +1,23 @@
+---
+- name: install and configure zabbix-proxy packages
+  block:
+    - apk:
+        name: zabbix-sqlite, zabbix-setup, sqlite
+    - command: install -d -o zabbix -g zabbix /var/lib/zabbix
+    - shell: test -e /var/lib/zabbix/zabbix-proxy.db || cat /usr/share/zabbix/database/sqlite3/schema.sql |sqlite3 /var/lib/zabbix/zabbix-proxy.db
+    - template: src=zabbix_proxy.conf.j2 dest=/etc/zabbix/zabbix_proxy.conf
+    - file:
+        path: /var/lib/zabbix/zabbix_traps.tmp
+        state: touch
+        owner: zabbix
+        group: zabbix
+        mode: '0644'
+    - service: name=zabbix-proxy state=restarted
+  when: force_reinstall|bool is true
+
+- name: install useful monitoring utilities
+  block:
+    - apk:
+      name: nmap, nmap-scripts
+    - debug:
+        msg: add to sudoers nmap command for zabbix user

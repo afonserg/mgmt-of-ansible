@@ -1,0 +1,43 @@
+---
+
+- name: setup zabbix agent for host monitoring (alpine)
+  block:
+    - package: name=zabbix-agent state=present
+    - template:
+        src: zabbix_agentd.conf.j2
+        dest: /etc/zabbix/zabbix_agentd.conf
+        mode: '0644'
+        owner: root
+        group: root
+    - file:
+        path: /etc/zabbix/zabbix_agentd.conf.d
+        state: directory
+    - file:
+        path: /run/zabbix
+        state: directory
+        owner: zabbix
+        group: zabbix
+    - service: name=zabbix-agentd state=restarted enabled=yes
+  when: ansible_facts['os_family']|lower == 'alpine' and force_reinstall|bool
+
+- name: setup zabbix agent for host monitoring (debian like)
+  block:
+    - name: install vendors repository
+      block:
+        - get_url:
+            url: https://repo.zabbix.com/zabbix/{{ zabbix_version }}/ubuntu/pool/main/z/zabbix-release/{{ zabbix_release_deb }}
+            dest: /tmp/
+        - command: dpkg -i /tmp/{{ zabbix_release_deb }}
+        - apt: update_cache=yes
+      when: force_reinstall|bool
+    - apt: name=zabbix-agent state=present
+    - template:
+        src: zabbix_agentd.conf.j2
+        dest: /etc/zabbix/zabbix_agentd.conf
+        mode: '0644'
+        owner: root
+        group: root
+    - file: path=/etc/zabbix/zabbix_agentd.conf.d state=directory
+    - service: name=zabbix-agent state=restarted
+  when: ansible_facts['os_family']|lower == 'debian' and force_reinstall|bool
+

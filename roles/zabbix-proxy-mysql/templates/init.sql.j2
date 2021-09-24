@@ -1,0 +1,5 @@
+GRANT ALL ON {{zbx_dbname}}.* TO {{zbx_dbuser}}@'127.0.0.1' IDENTIFIED BY '{{zbx_dbpass}}' WITH GRANT OPTION;
+GRANT ALL ON {{zbx_dbname}}.* TO {{zbx_dbuser}}@'localhost' IDENTIFIED BY '{{zbx_dbpass}}' WITH GRANT OPTION;
+GRANT ALL ON {{zbx_dbname}}.* TO {{zbx_dbuser}}@'{{ansible_host}}' IDENTIFIED BY '{{zbx_dbpass}}' WITH GRANT OPTION;
+GRANT ALL ON {{zbx_dbname}}.* TO {{zbx_dbuser}}@'::1' IDENTIFIED BY '{{zbx_dbpass}}' WITH GRANT OPTION;
+FLUSH PRIVILEGES;

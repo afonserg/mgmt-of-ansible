@@ -1,0 +1,3 @@
+zabbix_version: 5.4
+zabbix_release_deb: zabbix-release_5.4-1+ubuntu20.04_all.deb
+zabbix_collector: localhost

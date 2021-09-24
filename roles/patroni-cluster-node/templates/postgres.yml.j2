@@ -1,0 +1,146 @@
+#
+# Global/Universal configuration section ====================
+#
+scope: "{{ patroni_scope }}"
+namespace: "/postgresql-service/"
+name: {{ ansible_host }}
+
+#
+# DSC (etcd/ZooKeeper) hosts configuration ====================
+#
+{{ patroni_dcs }}:
+{% for dd in patroni_dcs_entries %}
+    host: {{ dd }}
+{% endfor %}
+
+#
+# =======================================================
+#
+#dcs:
+    #postgresql.listen 
+    #postgresql.data_dir
+
+#
+# ==================================================================
+#
+log:
+    level: INFO
+    # dir: 
+    # file_num: 4
+    # file_size: 25000000
+
+#
+# =======================================================
+#
+restapi:
+    connect_address: {{ ansible_host }}:8008
+    listen: {{ ansible_host }}:8008
+    authentication:
+        username: username
+        password: '{{ patroni_restapi_password }}'
+#   certfile: /etc/ssl/certs/ssl-cert-snakeoil.pem
+#   keyfile: /etc/ssl/private/ssl-cert-snakeoil.key
+#   cafile: ???
+   verify_client: none
+
+#
+# ==================================================================
+#
+ctl:
+    insecure: true # Allow connections to SSL sites without certs
+#   cacert: /etc/ssl/certs/ssl-cacert-snakeoil.pem
+#   certfile: /etc/ssl/certs/ssl-cert-snakeoil.pem
+#   keyfile: ???
+
+#
+# =======================================================
+#
+bootstrap:
+    #
+    # this section will be written into Etcd:/<namespace>/<scope>/config after initializing new cluster
+    # and all other cluster members will use it as a `global configuration`
+    #
+    dcs:
+        loop_wait: 7
+        ttl: 30
+        retry_timeout: 10
+        maximum_lag_on_failover: 1048576
+        master_start_timeout: 57
+        synchronous_mode: false
+        synchronous_mode_strict: false
+        postgresql:
+            use_pg_rewind: false
+            use_slots: true
+            #
+            # The following parameters are given as command line options
+            # overriding the settings in postgresql.conf.
+            #
+            parameters:
+                wal_level: hot_standby
+                hot_standby: "on"
+                wal_keep_segments: 8
+                max_wal_senders: 10
+                max_replication_slots: 5
+                max_worker_processes: 8
+                wal_log_hints: "on"
+                track_commit_timestamp: "off"
+      
+    #
+    # Custom bootstrap method
+    #
+    method: pg_createcluster
+    pg_createcluster:
+        command: /usr/share/patroni/pg_createcluster_patroni
+
+    #
+    # Set pg_hba.conf to the following values after bootstrapping or cloning.
+    # If you want to allow regular connections from the local network, or
+    # want to use pg_rewind, you need to uncomment the fourth entry.
+    #
+    pg_hba:
+        - local   all             all                                     peer
+        - host    all             all             127.0.0.1/32            md5
+        - host    all             all             ::1/128                 md5
+        - local   replication     all                                     peer
+        - host    replication     all             127.0.0.1/32            md5
+        - host    replication     all             ::1/128                 md5
+        {% for ll in pg_hba_entries %}
+        - {{ ll }}
+        {% endfor %}
+    
+#
+# ==================================================================
+#
+postgresql:
+  # Custom clone method
+  create_replica_method:
+    - pg_clonecluster
+  pg_clonecluster:
+    command: /usr/share/patroni/pg_clonecluster_patroni
+
+  listen: {{ ansible_facts['default_ipv4']['address'] }}:5432
+  connect_address: {{ ansible_facts['default_ipv4']['address'] }}:5432
+  use_unix_socket: true
+  data_dir: /var/lib/postgresql/12/{{ patroni_scope }}
+  bin_dir: /usr/lib/postgresql/12/bin
+  config_dir: /etc/postgresql/12/{{ patroni_scope }}
+  pgpass: /var/lib/postgresql/12-{{ patroni_scope }}.pgpass
+  authentication:
+    replication:
+      username: replicator
+      password: '{{ patroni_replicator_password }}'
+# A superuser role is required in order for Patroni to manage the local
+# Postgres instance.  If the option `use_unix_socket' is set to `true', then
+# specifying an empty password results in no md5 password for the superuser
+# being set and sockets being used for authentication. The `password:' line is
+# nevertheless required.  Note that pg_rewind will not work if no md5 password
+# is set.
+    superuser:
+      username: postgres
+      password: '{{ patroni_postgres_password }}'
+  parameters:
+    unix_socket_directories: '/var/run/postgresql/'
+    # Emulate default Debian/Ubuntu logging
+    logging_collector: 'on'
+    log_directory: '/var/log/postgresql'
+    log_filename: 'postgresql-12-{{ patroni_scope }}.log'

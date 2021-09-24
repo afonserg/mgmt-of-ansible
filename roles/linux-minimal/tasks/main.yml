@@ -1,0 +1,60 @@
+---
+
+- name: update-upgrade packages (alpine)
+  apk: update_cache=yes upgrade=yes
+  when: ansible_facts['os_family']|lower == 'alpine'
+
+- name: set up all standard repos (debian like)
+  block:
+    - command: apt-add-repository --no-update multiverse
+    - command: apt-add-repository --no-update universe
+    - command: apt-add-repository --no-update restricted
+    - apt: update_cache=yes upgrade=yes
+  when: ansible_facts['os_family']|lower == 'debian' and force_reinstall|bool
+
+- name: update-upgrade packages (debian like)
+  block:
+    - apt: update_cache=yes upgrade=yes
+  when: ansible_facts['os_family']|lower == 'debian'
+
+- name: install essential soft (alpine)
+  block:
+    - debug:
+        msg: next actions need to bee moved to VM post-install procedure
+    - apk: name=sudo
+    - shell: grep 'set disable_coredump false' /etc/sudo.conf || echo 'set disable_coredump false' >>/etc/sudo.conf
+    - apk:
+        name: openssh, python3, coreutils
+  when: force_reinstall |bool and ansible_facts['os_family'] |lower == 'alpine'
+
+- name: install essential soft (debian like)
+  block:
+    - debug:
+        msg: next actions need to bee moved to VM post-install procedure
+    - apk:
+        name: sudo, openssh, python3, python3-apt, coreutils, watchdog
+  when: force_reinstall|bool and ansible_facts['os_family']|lower == 'debian'
+
+- name: setup hostname
+  block:
+    - hostname: name={{inventory_hostname}}
+    - replace:
+        path: /etc/hosts
+        regexp: '^127\.0\.1\.1\s.*$'
+        replace: 127.0.1.1 {{inventory_hostname}}
+    - shell: echo {{inventory_hostname}} >/etc/hostname
+  when: force_reinstall|bool
+
+- name: setup timezone and time (alpine)
+  block:
+    - command: setup-timezone -z {{ time_zone }}
+    - command: setup-ntp -c busybox
+  when: force_reinstall|bool and ansible_facts['os_family']|lower == 'alpine'
+
+- name: setup timezone and time (debian)
+  block:
+    - shell:  echo {{ time_zone }} >/etc/timezone
+    - command: timedatectl set-timezone {{ time_zone }}
+    - command: timedatectl set-ntp
+  when: force_reinstall|bool and ansible_facts['os_family']|lower == 'debian'
+

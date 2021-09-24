@@ -1,0 +1,25 @@
+#
+# $Id$
+#
+
+---
+
+- name: install packages (debian like)
+  apt: name=patroni
+  when: ansible_facts['os_family']|lower == 'debian'
+
+- name: install packages (alpine)
+  block:
+    - apk: name=py-psycopg2
+    - pip: name=patroni[{{ patroni_dcs }}]
+  when: ansible_facts['os_family']|lower == 'alpine'
+
+- name: config patroni node
+  block:
+    - template:
+        src: postgres.yml.j2
+        dest: /etc/patroni/config.yml
+        mode: 0644
+        owner: root
+        group: root
+    - service: name=patroni state=restarted
